@@ -4,19 +4,11 @@ import ResultHeader from "../../components/ResultHeader";
 import NameDivider from "../../components/NameDivider";
 import './index.css';
 import getBiliBiliDataByMediaName from "../../utils/getBiliBiliDataByMediaName";
-import getBiliBiliDataByRealPersonName from "../../utils/getBiliBiliDataByRealPersonName";
 import AnimeInfo from "../../components/AnimeInfo";
-import RealPersonInfo from "../../components/RealPersonInfo";
-import CharacterInfo from "../../components/CharacterInfo";
-import CompanyInfo from "../../components/CompanyInfo";
 import Meta from "antd/es/card/Meta";
-import MusicInfo from "../../components/MusicInfo";
 import axios from "axios";
 import BookInfo from "../../components/BookInfo";
 import GameInfo from "../../components/GameInfo";
-import {Link} from "react-router-dom";
-import TypeTag from "../../components/TypeTag";
-import removeLastCharacter from "../../utils/removeLastCharacter";
 
 const { TabPane } = Tabs;
 
@@ -65,12 +57,8 @@ function DetailInfo (props) {
                 searchResult = await getBiliBiliDataByMediaName(data.data.zh_name);
                 break;
             }
-            case 'real_person' : searchResult = await getBiliBiliDataByRealPersonName(data.data.zh_name); break;
-            case 'music': searchResult = {};break;
             case 'book' : searchResult = {};break;
             case 'game' : searchResult = {};break;
-            case 'character' : searchResult = {};break;
-            case 'company' : searchResult = {};break;
             default: {
                 message.warning('错误的类型');
                 searchResult = {}
@@ -109,90 +97,23 @@ function DetailInfo (props) {
     return (
         <div id={'detail-container'}>
             <ResultHeader history={props.history}/>
-            <NameDivider title={info.primary_name} type={info.typo}/>
+            <NameDivider title={info.zh_name} type={info.typo}/>
             <div style={{backgroundColor:'white', height:'.1rem', marginBottom:'-1px'}}/>
             <div id={'result-container'}>
                 {info.typo === 'anime' ? <AnimeInfo data={info} bilibiliData={bilibiliData} mobile={mobile} loading={loading} history={props.history} name={info.zh_name}/> : ''}
-                {info.typo === 'real_person' ? <RealPersonInfo data={info} mobile={mobile} loading={loading} history={props.history}/> : ''}
-                {info.typo === 'music' ? <MusicInfo data={info} bilibiliData={bilibiliData} mobile={mobile} loading={loading} history={props.history}/> : ''}
                 {info.typo === 'book' ? <BookInfo data={info} mobile={mobile} loading={loading} history={props.history}/> : ''}
                 {info.typo === 'game' ? <GameInfo data={info} mobile={mobile} loading={loading} history={props.history}/> : ''}
-                {info.typo === 'character' ? <CharacterInfo data={info} mobile={mobile} loading={loading} history={props.history}/> : ''}
-                {info.typo === 'company' ? <CompanyInfo data={info} mobile={mobile} loading={loading} history={props.history}/> : ''}
             </div>
             <div id={'relevant-container'}>
                 <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
                     <Col className="gutter-row" span={24}>
                         <Tabs defaultActiveKey="1">
-                            <TabPane tab={<strong style={{fontSize:'1.3rem'}}>词条推荐</strong>} key="1" style={{paddingBottom:'1rem', height:'auto'}}>
-                                {
-                                    recommendItems.length === 0 ? '':
-                                        <Button style={{float:'right'}} onClick={async () => {
-                                            let recommend_items = (await axios.post ('/api/recommend', {guid:Number(guid), count:20})).data
-                                            setRecommendItems(recommend_items);
-                                            let recommend_query = recommend_items.map(item => ({guid:Number(item.targetGuid), type:item.targetType}));
-                                            let arr = recommend_query.filter(item => item.guid > 0);
-                                            let visuals = (await axios.post('/api/visuals', arr)).data;
-                                            if(visuals.code === 1){
-                                                message.warning('获取推荐词条图片出错')
-                                            }
-                                            else{
-                                                setVisuals(visuals.data);
-                                            }
-                                        }}>换一批</Button>
-                                }
-                                <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', marginTop:'3rem'}}>
-                                    {
-                                        recommendItems.map(item => (
-                                            <Popover content={item.description}>
-                                                <Card hoverable style={{padding:'0', backgroundColor:generateRandomColor(), marginBottom:'1rem', marginRight:'1rem'}}
-                                                      onClick={async () => {
-                                                          if(item.targetGuid < 0){
-                                                              message.warning('暂无此页面');
-                                                              return;
-                                                          }
-                                                          let data = (await axios.post ('/api/detailByGuid', {
-                                                              guid:item.targetGuid
-                                                          })).data;
-                                                          if(data.code === 1) {
-                                                              message.warning('暂无此页面')
-                                                              return;
-                                                          }
-                                                          props.history.push({pathname:`/detailInfo/${item.targetGuid}`});
-                                                          document.body.scrollTop = document.documentElement.scrollTop = 0;
-                                                      }}
-                                                >
-                                                    <Meta
-                                                        avatar={
-                                                            <Avatar src={
-                                                                visuals.filter(i => i.guid===item.targetGuid).length === 0 ? '':
-                                                                    removeLastCharacter(visuals.filter(i => i.guid===Number(item.targetGuid))[0].image_url)
-                                                            } draggable
-                                                                    size={{ xs: 56, sm: 56, md: 56, lg: 56, xl: 64, xxl: 80 }}
-                                                            />
-                                                        }
-                                                        style={{minWidth:'12rem', marginRight:'2rem'}}
-                                                        title={<div style={{display:'flex'}}><Link>{item.target}{item.targetType==='entity' ? '':<TypeTag type={item.targetType}/>}</Link></div>}
-                                                        description={<div>
-                                                            {item.rela}
-                                                        </div>}
-                                                    />
-                                                </Card>
-                                            </Popover>
-                                        ))
-                                    }
-                                    {
-                                        recommendItems.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={'暂无推荐词条'}/>:''
-                                    }
-                                </div>
-                            </TabPane>
                             <TabPane tab={<strong style={{fontSize:'1.3rem'}}>相关词条</strong>} key="2" style={{paddingBottom:'1rem', height:'auto'}}>
                                 <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', marginTop:'3rem'}}>
                                     {
                                         info.related_subjects.map(item =>
                                             <Popover content={item.primary_name}>
                                                 <Card
-                                                    hoverable
                                                     className={'relevant-card'}
                                                     cover={<div className="relevant-image"
                                                                 style={{backgroundImage:`url("${item.visuals}")`}}/>}
